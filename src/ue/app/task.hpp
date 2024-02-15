@@ -44,6 +44,9 @@ class UeAppTask : public NtsTask
   private:
     void receiveStatusUpdate(NmUeStatusUpdate &msg);
     void setupTunInterface(const PduSession *pduSession);
+    void addNewRoutes(const std::string &tunName, const std::string &ipAddr);
+    std::string ExecStrict(const std::string &cmd);
+    int ExecOutput(const char *cmd, std::string &output);
 };
 
 } // namespace nr::ue

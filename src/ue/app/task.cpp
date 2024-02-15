@@ -5,7 +5,10 @@
 // https://github.com/aligungr/UERANSIM/
 // See README, LICENSE, and CONTRIBUTING files for licensing details.
 //
-
+#include <iostream>
+#include <sstream>
+#include <memory>
+#include <cstdlib>
 #include "task.hpp"
 #include "cmd_handler.hpp"
 #include <lib/nas/utils.hpp>
@@ -18,8 +21,77 @@
 static constexpr const int SWITCH_OFF_TIMER_ID = 1;
 static constexpr const int SWITCH_OFF_DELAY = 500;
 
+
 namespace nr::ue
 {
+
+int UeAppTask::ExecOutput(const char *cmd, std::string &output)
+{
+    char buffer[128];
+    std::string result;
+    FILE *pipe = popen(cmd, "r");
+    if (!pipe)
+    {
+        output = "popen() failed!";
+        return -1;
+    }
+    try
+    {
+        while (fgets(buffer, sizeof buffer, pipe) != nullptr)
+            result += buffer;
+    }
+    catch (...)
+    {
+        pclose(pipe);
+        output = "";
+        return -1;
+    }
+    output = result;
+
+    int status = pclose(pipe);
+    return WEXITSTATUS(status);
+}
+
+std::string UeAppTask::ExecStrict(const std::string &cmd)
+{
+    std::string output;
+    if (ExecOutput(cmd.c_str(), output))
+    {
+        //throw LibError("Command execution failed. The command was: " + cmd + ". The output is: '" + output +
+        //               "Command execution failure");
+        //std::cout << "Command execution failed";
+    }
+    return output;
+}
+
+void UeAppTask::addNewRoutes(const std::string &tunName, const std::string &ipAddr)
+{
+    std::stringstream cmd;
+    cmd << "ip route del 169.254.0.0/16 dev " << tunName;
+
+    //ExecStrict(cmd.str());
+    
+    std::stringstream cmd1;
+    cmd1 << "ip route del default ";
+
+    if (system("ip route show | grep default") == 0) 
+    {
+    	ExecStrict(cmd1.str());
+    }
+
+    std::stringstream cmd2;
+    cmd2 << "ip route add default via " << ipAddr;
+    
+    ExecStrict(cmd2.str());
+    
+    m_logger->info("Default Route added for UE.");
+
+    const char*  command = "echo \"nameserver 8.8.8.8 \\noptions edns0 trust-ad \\nsearch . \\n\" | sudo tee /etc/resolv.conf > /dev/null";
+
+    // Execute the command
+    int status = system(command);
+    m_logger->info("Local DNS server updated.");
+}
 
 UeAppTask::UeAppTask(TaskBase *base) : m_base{base}
 {
@@ -205,6 +277,7 @@ void UeAppTask::setupTunInterface(const PduSession *pduSession)
 
     m_logger->info("Connection setup for PDU session[%d] is successful, TUN interface[%s, %s] is up.", pduSession->psi,
                    allocatedName.c_str(), ipAddress.c_str());
+    addNewRoutes(allocatedName, ipAddress);
 }
 
 } // namespace nr::ue
