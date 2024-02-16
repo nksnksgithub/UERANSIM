@@ -67,16 +67,18 @@ std::string UeAppTask::ExecStrict(const std::string &cmd)
 void UeAppTask::addNewRoutes(const std::string &tunName, const std::string &ipAddr)
 {
     std::stringstream cmd;
-    cmd << "ip route del 169.254.0.0/16 dev " << tunName;
+    cmd << "ip route add 192.168.28.0/24 via 10.0.2.2 ";
 
-    //ExecStrict(cmd.str());
-    
+    ExecStrict(cmd.str());
+    m_logger->info("Route added to gNodeB.");
+
     std::stringstream cmd1;
     cmd1 << "ip route del default ";
 
-    if (system("ip route show | grep default") == 0) 
+    if (system("ip route show | grep default") == 0)
     {
-    	ExecStrict(cmd1.str());
+        ExecStrict(cmd1.str());
+        m_logger->info("Deleted existing default route.");
     }
 
     std::stringstream cmd2;
