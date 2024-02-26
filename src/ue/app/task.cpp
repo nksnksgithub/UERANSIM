@@ -69,8 +69,8 @@ void UeAppTask::addNewRoutes(const std::string &tunName, const std::string &ipAd
     std::stringstream cmd;
     cmd << "ip route add 192.168.28.0/24 via 10.0.2.2 ";
 
-    ExecStrict(cmd.str());
-    m_logger->info("Route added to gNodeB.");
+    // ExecStrict(cmd.str());
+    // m_logger->info("Route added to gNodeB.");
 
     std::stringstream cmd1;
     cmd1 << "ip route del default ";
